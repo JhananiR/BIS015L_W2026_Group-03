@@ -375,8 +375,7 @@ chunk like this:</p>
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()
 ## ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
-<pre class="r"><code>bird_collision &lt;- read.csv(&quot;data/bird_collision.csv&quot;)</code></pre>
-<pre class="r"><code>bird_collision &lt;- bird_collision %&gt;% 
+<pre class="r"><code>bird_collision &lt;- read.csv(&quot;data/bird_collision.csv&quot;) %&gt;% 
   select(!(starts_with(&quot;scaled&quot;)))</code></pre>
 <pre class="r"><code>collisions_date_sep &lt;- bird_collision %&gt;% 
   separate(col=&quot;date&quot;, into = c(&quot;month&quot;,&quot;day&quot;,&quot;year&quot;), sep = &quot;/&quot;) %&gt;% 

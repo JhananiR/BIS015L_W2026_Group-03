@@ -19,11 +19,7 @@ library("tidyverse")
 
 
 ```{r}
-bird_collision <- read.csv("data/bird_collision.csv")
-```
-
-```{r}
-bird_collision <- bird_collision %>% 
+bird_collision <- read.csv("data/bird_collision.csv") %>% 
   select(!(starts_with("scaled")))
 ```
 
