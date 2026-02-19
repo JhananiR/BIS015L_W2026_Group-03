@@ -19,25 +19,61 @@ library("tidyverse")
 
 
 ```{r}
-collisions_migration_weather_spring_fall_dataset <- read.csv("data/collisions_migration_weather_spring_fall_dataset.csv")
+bird_collision <- read.csv("data/bird_collision.csv")
 ```
 
 ```{r}
-collisions_no_scaled <- collisions_migration_weather_spring_fall_dataset %>% 
+bird_collision <- bird_collision %>% 
   select(!(starts_with("scaled")))
 ```
 
 ```{r}
-collisions_date_sep <- collisions_no_scaled %>% 
+collisions_date_sep <- bird_collision %>% 
   separate(col="date", into = c("month","day","year"), sep = "/") %>% 
   select(!day) %>% 
   mutate(month=as.factor(month))
 ```
+
+Collisions by month:
 
 ```{r}
 collisions_date_sep %>% 
   ggplot(aes(x=month,y=count))+
   geom_boxplot()+
   coord_cartesian(y=c(0,30))
+```
+
+Collisions by building:
+
+```{r}
+bird_collision %>% 
+  ggplot(aes(x=building,y=count))+
+  geom_boxplot()+
+  coord_cartesian(y=c(0,30))
+```
+
+Collisions vs building height:
+
+```{r}
+bird_collision %>% 
+  ggplot(aes(x=ceiling_height,y=count))+
+  geom_point()+
+  coord_cartesian(y=c(0,30))
+```
+
+Collisions vs visibility:
+
+```{r}
+bird_collision %>% 
+  ggplot(aes(x=visibility_distance,y=count))+
+  geom_point()
+```
+
+Collisions vs migration amount:
+
+```{r}
+bird_collision %>% 
+  ggplot(aes(x=amt,y=count))+
+  geom_point()
 ```
 
