@@ -1,0 +1,112 @@
+---
+title: "Exploring Birds Data"
+output: html_document
+date: "2026-02-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Load the libraries
+```{r}
+library(tidyverse)
+library(janitor)
+library(naniar)
+```
+## Data
+```{r}
+bird_collision <- read.csv("data/bird_collision.csv")  %>% clean_names()
+```
+
+##Variables collected: 
+  date (mm/dd/yyyy)
+  year (yyyy)
+  yday (year day (Julian day))
+  building (unique ID (anonymous))
+  volunteer (unique ID (anonymous))
+  count (# birds found)
+  uwind (East-West component of wind (zonal wind))
+    + values: wind is blowing from east to west
+    - values: wind is blowing from west to east
+  vwind (North-South component of wind(Meridional wind))
+    + values: wind is blowing from south to north 
+    - values: wind is blowing from the north toward the south
+  ceiling height (m): average nightly height of the lowest cloud layer that covers at least 5/8 of the sky 
+  visibility distance (m): average horizontal distance at which object can be identified
+  Temperature (C): nightly average temperature recorded at ground level
+  AMT (average migration traffic): nightly average number of birds flying through a specific area of airspace(measured through weather radar)...birds/km/hr.. volume
+
+```{r}
+glimpse(bird_collision)
+```
+##any NA? 
+```{r}
+miss_var_summary(bird_collision) #doesn't seem like there's any na.. which lwk makes sense given the types data collected
+```
+##how many years are there in the data set? 
+```{r}
+bird_collision %>% 
+  distinct(year) #there's 2017 to 2020 
+```
+
+##is there a similar monthly trend every year in bird collision count ? 
+```{r}
+bird_collision %>% 
+  separate(col="date", into=c("month", "day", "year"), sep = "/") %>% 
+  select(year, month, count) %>% 
+  mutate(month=as.factor(month)) %>% 
+  group_by(year, month) %>% 
+  summarize(monthly_collision = sum(count), .groups = "drop") %>% 
+  ggplot(aes(x = month, y = monthly_collision)) +
+  geom_col(aes(fill = month)) +
+  facet_grid(~year) + 
+  labs ( title = "Monthly Bird Collisions by year", x = "Month", y = "Total Collisions")
+```
+
+##does having a east wind (east to west) result in different # of collisions than west wind (west to east)
+```{r}
+bird_collision %>% 
+  select(uwind, count) %>% 
+  mutate(wind_dir = ifelse(uwind > 0, "east", "west"),
+         wind_dir = as.factor(wind_dir)) %>% 
+  group_by(wind_dir) %>% 
+  summarize(total_collision = sum(count), .groups = "drop") %>% 
+  ggplot(aes(x = wind_dir, y = total_collision)) + 
+  geom_col(aes(fill = wind_dir)) + 
+  labs (title = "Wind Direction and Collision count", x = "Wind Direction", y = "Total Collision", fill = "Wind Direction")
+  #could be interesting to look by year too lwk 
+  #lwk... bird collision is never a continuous so no scatter plot?? I guess could look at uwind and visibility but not sure if there are relevant continuous data... 
+```
+
+```{r}
+bird_collision %>% 
+  select(uwind, count) %>% 
+  mutate(wind_dir = ifelse(uwind > 0, "east", "west"),
+         wind_dir = as.factor(wind_dir)) %>% 
+  ggplot(aes(x = wind_dir, y = count)) +
+  geom_boxplot(aes(fill = wind_dir))+
+  scale_y_log10() +
+  labs(
+    title = "Distribution of Daily Bird Collisions by Wind Direction", x = "Wind Direction", y = "Daily Collision Count") 
+```
+
+##visibility vs. collision 
+```{r}
+#could also do boxplot, honestly idk which is better
+bird_collision %>% 
+  select(visibility, count) %>% 
+  mutate(visibility = as.factor(visibility)) %>% 
+  group_by(visibility) %>% 
+  summarize(total_collision = sum(count)) %>% 
+  ggplot(aes(x = visibility, y = total_collision)) +
+  geom_col(aes(fill = visibility)) +
+  labs(title = "Visibility vs. Collision", x = "Visibility", y = "Collision")
+```
+
