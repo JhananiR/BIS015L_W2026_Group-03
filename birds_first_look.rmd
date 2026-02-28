@@ -1,7 +1,7 @@
 ---
 title: "birds"
 output: html_document
-date: "2026-02-17"
+date: "2026-02-28"
 ---
 
 ```{r setup, include=FALSE}
@@ -25,6 +25,11 @@ birds <- read.csv("data/bird_collision.csv")
 ```{r}
 bird_collision <- read.csv("data/bird_collision.csv") %>% 
   select(!(starts_with("scaled")))
+```
+
+```{r}
+bird_no_zero <- bird_collision %>% 
+  filter(count!=0)
 ```
 
 ```{r}
@@ -58,6 +63,7 @@ Collisions vs building height:
 bird_collision %>% 
   ggplot(aes(x=ceiling_height,y=count))+
   geom_point()+
+  geom_smooth(method=lm)+
   coord_cartesian(y=c(0,30))
 ```
 
@@ -66,7 +72,8 @@ Collisions vs visibility:
 ```{r}
 bird_collision %>% 
   ggplot(aes(x=visibility_distance,y=count))+
-  geom_point()
+  geom_point()+
+  geom_smooth(method=lm)
 ```
 
 Collisions vs migration amount:
@@ -74,6 +81,84 @@ Collisions vs migration amount:
 ```{r}
 bird_collision %>% 
   ggplot(aes(x=amt,y=count))+
-  geom_point()
+  geom_point()+
+  geom_smooth(method=lm)
 ```
 
+NO ZERO:
+
+Collisions by building:
+
+```{r}
+bird_no_zero %>% 
+  ggplot(aes(x=building,y=count))+
+  geom_boxplot()+
+  geom_smooth(method=lm)+
+  coord_cartesian(y=c(0,30))
+```
+
+Collisions vs building height:
+
+```{r}
+bird_no_zero %>% 
+  ggplot(aes(x=ceiling_height,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  coord_cartesian(y=c(0,30))
+```
+
+Collisions vs visibility:
+
+```{r}
+bird_no_zero %>% 
+  ggplot(aes(x=visibility_distance,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)
+```
+
+Collisions vs migration amount:
+
+```{r}
+bird_no_zero %>% 
+  ggplot(aes(x=amt,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)
+```
+
+SCALED:
+
+Collisions vs building height:
+
+```{r}
+birds %>% 
+  ggplot(aes(x=scaled_ceiling_height,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)+
+  coord_cartesian(y=c(0,30))
+```
+
+Collisions vs uwind:
+
+```{r}
+birds %>% 
+  ggplot(aes(x=scaled_uwind,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)
+```
+vwind:
+
+```{r}
+birds %>% 
+  ggplot(aes(x=scaled_vwind,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)
+```
+
+Collisions vs migration amount:
+
+```{r}
+birds %>% 
+  ggplot(aes(x=scaled_amt,y=count))+
+  geom_point()+
+  geom_smooth(method=lm)
+```
