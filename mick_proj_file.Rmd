@@ -1,0 +1,59 @@
+---
+title: "Mick's project file"
+output: html_document
+date: "2026-03-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Does temperature affect collision numbers? 
+Visibility and collisions (barplot??? boxplot???) … acknowledge not having bunch of “high” vs. “low” visibility → could be a separate table… how much data set is in each. 
+
+```{r}
+library("tidyverse")
+
+```
+
+```{r}
+birds <- read.csv("data/bird_collision.csv")
+```
+
+```{r}
+birds <- birds %>% separate(col="date", into = c("month","day","year"), sep = "/") %>% ##separate month into col
+  select(!day) %>% ##remove day, since data already has a day col
+  mutate(month=as.factor(month)) ##make month into a factor
+```
+
+```{r}
+birds <- birds %>% ##make a new column showing what season, since the data is split by spring or fall
+  mutate(season=case_when(
+    month=="4" | month=="5" | month=="6" ~ "spring",
+    month=="8" | month=="9" | month=="10" | month=="11" ~ "fall",
+    .default=NA
+  ))
+```
+
+```{r}
+birds <- birds %>% 
+  mutate(migration_level= case_when( ##migration level from the paper
+    season=="spring" & amt>=4 & amt<=1860 ~ "medium", ##946 is average migration for spring
+    season=="fall" & amt>=9 & amt<=3420 ~ "medium", ##1690 is avg for fall
+    season=="spring" & amt<=4 ~ "low", ##avg-1SD
+    season=="fall" & amt<=9 ~ "low",
+  season=="spring" & amt>=1860 ~ "high", ##avg+1SD
+    season=="fall" & amt>=3420 ~ "high"
+  ))
+```
+
+```{r}
+names(birds)
+```
+Does wind affect collision numbers? (do separate for uwind and vwind) 
+
+uwind
+```{r}
+
+```
+
