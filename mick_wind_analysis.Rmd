@@ -136,22 +136,6 @@ birds %>%
   theme(legend.position = "none")
 ```
 
-##vwind spring
-
-```{r, echo=FALSE}
-birds %>% 
-  filter(season=="spring") %>% 
-  ggplot(aes(x=vwind, y=count, color=migration_level))+
-  geom_point()+
-  geom_smooth(method=lm, color="black", se=T)+
-  facet_wrap(~migration_level)+
-  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in spring, separated by migration level", color="Migration level")+
-  theme_tufte()+
-  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
-  scale_color_manual(values=my_palette[3:10])+
-  theme(legend.position = "none")
-```
-
 ##vwind fall
 
 ```{r, echo=FALSE}
@@ -179,15 +163,12 @@ birds %>%
   geom_point()+
   geom_smooth(method=lm, color="black", se=T)+
   facet_wrap(~migration_level)+
-  scale_y_log10()+
   labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in spring, separated by migration level", color="Migration level")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
   theme(legend.position = "none")
-
 ```
-
 
 ##boxplots
 
