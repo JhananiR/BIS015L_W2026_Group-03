@@ -1,0 +1,207 @@
+---
+title: "temp"
+output: html_document
+date: "2026-03-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+library("tidyverse")
+library("janitor")
+library(RColorBrewer)
+library(paletteer)
+library(ggthemes)
+```
+
+```{r, echo=FALSE}
+birds <- read.csv("data/bird_collision.csv")
+```
+
+##colors (for theme, use theme_tufte())
+```{r}
+colors <- paletteer::palettes_d_names
+```
+```{r}
+my_palette <- paletteer_d("ggsci::indigo_material")
+my_palette
+```
+
+
+##Separate date column
+
+```{r}
+birds <- birds %>% separate(col="date", into = c("month","day","year"), sep = "/") %>% ##separate month into col
+  select(!day) %>% ##remove day, since data already has a day col
+  mutate(month=as.factor(month)) ##make month into a factor
+```
+
+##Add season variable
+
+```{r}
+birds <- birds %>% ##make a new column showing what season, since the data is split by spring or fall
+  mutate(season=case_when(
+    month=="4" | month=="5" | month=="6" ~ "spring",
+    month=="8" | month=="9" | month=="10" | month=="11" ~ "fall",
+    .default=NA
+  ))
+```
+
+##Adding migration level variable based on the paper
+
+```{r}
+birds <- birds %>% 
+  mutate(migration_level= case_when( ##migration level from the paper
+    season=="spring" & amt>=4 & amt<=1860 ~ "medium", ##946 is average migration for spring
+    season=="fall" & amt>=9 & amt<=3420 ~ "medium", ##1690 is avg for fall
+    season=="spring" & amt<=4 ~ "low", ##avg-1SD
+    season=="fall" & amt<=9 ~ "low",
+  season=="spring" & amt>=1860 ~ "high", ##avg+1SD
+    season=="fall" & amt>=3420 ~ "high"
+  ))
+```
+
+##Separate wind speed into low, med, high with same method as migration level: low<= avg-1SD, med<= avg+1SD, >= avg-1SD, high>=avg+1SD. I took the absolute value of the winds first, since negative wind is just the opposite direction of positive, and I want to compare strength, not direction
+
+```{r}
+birds %>% 
+  group_by(season) %>% 
+  mutate(uwind_abs=abs(uwind), vwind_abs=abs(vwind)) %>% 
+  summarise(mean(uwind_abs), sd(uwind_abs), mean(vwind_abs), sd(vwind_abs))
+```
+
+```{r}
+birds <- birds %>% 
+  mutate(uwind_abs=abs(uwind), vwind_abs=abs(vwind)) %>%
+  mutate(uwind_level= case_when(
+    season=="spring" & uwind_abs<= 2.457172-2.132746 ~"low",
+    season=="fall" & uwind_abs<= 2.184764-1.760663 ~"low",
+    season=="spring" & uwind_abs>= 2.457172+2.132746 ~"high",
+    season=="fall" & uwind_abs>= 2.184764+1.760663 ~"high",
+    season=="spring" & uwind_abs>= 2.457172-2.132746 & uwind<= 2.457172+2.132746 ~"medium",
+    season=="fall" & uwind_abs>= 2.184764-1.760663 & uwind_abs<= 2.184764+1.760663 ~"medium",
+  )) %>% 
+  mutate(vwind_level= case_when(
+    season=="spring" & vwind_abs<= 2.648716-1.587146 ~"low",
+    season=="fall" & vwind_abs<= 2.357720-1.516771 ~"low",
+    season=="spring" & vwind_abs>= 2.648716+1.587146 ~"high",
+    season=="fall" & vwind_abs>= 2.357720+1.516771 ~"high",
+    season=="spring" & vwind_abs>= 2.648716-1.587146 & vwind<= 2.648716+1.587146 ~"medium",
+    season=="fall" & vwind_abs>= 2.357720-1.516771 & vwind_abs<= 2.357720+1.516771 ~"medium",
+  ))
+```
+
+```{r}
+names(birds)
+```
+
+##temp analysis
+
+##spring
+
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=temperature,y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y="Number of collisions",x="Temperature (ºC)", title="Temperature compared to collision count in spring, separated by migration level", color="Migration level")+
+  facet_wrap(~migration_level)
+```
+
+##fall
+
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=temperature,y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y="Number of collisions",x="Temperature (ºC)", title="Temperature compared to collision count in fall, separated by migration level", color="Migration level")+
+  facet_wrap(~migration_level)+
+  scale_y_log10()
+```
+
+##visibility
+
+##
+
+```{r}
+birds %>% 
+  group_by(season) %>% 
+  count(visibility)
+```
+
+
+##spring
+
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=visibility_distance, y=count, color = migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in spring, separated by migration level", color="Migration level")+
+  facet_wrap(~migration_level)
+```
+
+##fall
+
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=visibility_distance, y=count, color = migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in fall, separated by migration level", color="Migration level")+
+  facet_wrap(~migration_level)+
+  scale_y_log10()
+```
+
+##boxplots
+
+##spring
+
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=visibility, y=count, fill = migration_level, position="dodge"))+
+  geom_boxplot()+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette)+
+  labs(y="Number of collisions",x="Visibility level", title="Visibility level compared to collision count in spring, separated by migration level", color="Migration level")+
+  facet_wrap(~migration_level)
+
+```
+
+##fall
+
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=visibility, y=count, fill = migration_level, position="dodge"))+
+  geom_boxplot()+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette)+
+  labs(y="Number of collisions",x="Visibility level", title="Visibility level compared to collision count in fall, separated by migration level", color="Migration level")+
+  facet_wrap(~migration_level)+
+  scale_y_log10()
+
+```
+
