@@ -105,7 +105,7 @@ names(birds)
 #theme_tufte()+
 #  scale_fill_manual(values=my_palette)+
 #  scale_color_manual(values=my_palette)
-#  scale_fill_manual(values=my_palette[3:10])+ #this line is best for scatterplots, as it removes the lightest two colors from the palette
+#  scale_fill_manual(values=my_palette[3:10])+ #this line is best for scatterplots, as it removes the lightest two colors from the palette which are too light to see in a scatterplot
 #  scale_color_manual(values=my_palette[3:10])
 ```
 

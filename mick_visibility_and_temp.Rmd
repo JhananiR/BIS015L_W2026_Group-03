@@ -111,7 +111,9 @@ birds %>%
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
   labs(y="Number of collisions",x="Temperature (ºC)", title="Temperature compared to collision count in spring, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)
+  facet_wrap(~migration_level)+
+  theme(legend.position = "none")
+
 ```
 
 ##fall
@@ -127,7 +129,9 @@ birds %>%
   scale_color_manual(values=my_palette[3:10])+
   labs(y="Number of collisions",x="Temperature (ºC)", title="Temperature compared to collision count in fall, separated by migration level", color="Migration level")+
   facet_wrap(~migration_level)+
-  scale_y_log10()
+  scale_y_log10()+
+    theme(legend.position = "none")
+
 ```
 
 ##visibility
@@ -137,7 +141,15 @@ birds %>%
 ```{r}
 birds %>% 
   group_by(season) %>% 
-  count(visibility)
+  count(visibility) %>% 
+  ggplot(aes(x=visibility, y=n, fill=visibility))+
+  geom_col()+
+  facet_wrap(~season)+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  labs(y=NULL,x="Visibility", title="Number of observations for each visibility level in spring and fall", color="Visibility")+
+  theme(legend.position = "none")
 ```
 
 
@@ -153,7 +165,9 @@ birds %>%
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
   labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in spring, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)
+  facet_wrap(~migration_level)+
+  theme(legend.position = "none")
+
 ```
 
 ##fall
@@ -169,7 +183,9 @@ birds %>%
   scale_color_manual(values=my_palette[3:10])+
   labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in fall, separated by migration level", color="Migration level")+
   facet_wrap(~migration_level)+
-  scale_y_log10()
+  scale_y_log10()+
+  theme(legend.position = "none")
+
 ```
 
 ##boxplots
@@ -185,7 +201,8 @@ birds %>%
   scale_fill_manual(values=my_palette)+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette)+
   labs(y="Number of collisions",x="Visibility level", title="Visibility level compared to collision count in spring, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)
+  facet_wrap(~migration_level)+
+  theme(legend.position = "none")
 
 ```
 
@@ -201,7 +218,9 @@ birds %>%
   scale_color_manual(values=my_palette)+
   labs(y="Number of collisions",x="Visibility level", title="Visibility level compared to collision count in fall, separated by migration level", color="Migration level")+
   facet_wrap(~migration_level)+
-  scale_y_log10()
+  scale_y_log10()+
+  theme(legend.position = "none")
+
 
 ```
 
