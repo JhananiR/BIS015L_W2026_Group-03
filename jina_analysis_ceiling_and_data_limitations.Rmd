@@ -1,0 +1,368 @@
+---
+title: "jina_ceiling_height_analysis"
+author: "Jina Moon"
+date: "2026-03-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Libraries
+```{r, echo=FALSE}
+library("tidyverse")
+library("janitor")
+library(RColorBrewer)
+library(paletteer)
+library(ggthemes)
+```
+
+##read data
+```{r, echo=FALSE}
+birds <- read.csv("data/bird_collision.csv") %>% clean_names()
+```
+
+##colors
+```{r}
+colors <- paletteer::palettes_d_names
+```
+
+```{r}
+my_palette <- paletteer_d("ggsci::indigo_material")
+my_palette
+```
+##Ceiling height vs. collisions
+```{r}
+birds %>% 
+  group_by(date, ceiling_height) %>% #grouped by date, so that we can look at date vs. ceiling_height and not other factors 
+  summarize(total_collisions = sum(count), .groups = "drop") %>% 
+  filter(total_collisions < 100) %>% #gets rid of one outlier that was identified for graph readability
+  ggplot(aes(x = ceiling_height, y = total_collisions)) +
+  geom_jitter(width = 0, height = 0.15, alpha = 0.5, color = "darkgray") +
+  geom_smooth(method = "lm", se = TRUE, linewidth = 1) +
+  scale_y_log10() +
+  labs(
+    title = "Daily Bird Collisions vs. Cloud Ceiling Height",
+    x = "Ceiling Height (m)",
+    y = "Total Collisions per Day"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5))
+```
+## Outlier? 
+```{r}
+birds %>% 
+  group_by(date, ceiling_height) %>% 
+  summarize(total_collisions = sum(count), .groups = "drop") %>% 
+  arrange(desc(total_collisions)) %>% 
+  head(n = 5)
+
+#one outlier at 354 collisions... 
+``` 
+
+
+##Equal number of data for each building type? 
+if unequal would influence total collisions per day (less buildings some days than other), buildings with fewer days look artificially safer, etc. 
+```{r}
+birds %>% 
+  group_by(building) %>% 
+  count() %>% 
+  ggplot(aes(x=building, y=n)) + 
+  geom_col(mapping = aes (fill = building)) +
+  labs(
+    title = "Number of Observations per Building",
+    x = "Building",
+    y = "Number of days recorded"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5))+
+  scale_fill_manual(values = colorRampPalette(my_palette)(27)) #using my palette, but let R fill in gaps
+```
+
+##Collision rate per building to tackle bias in number of building 
+```{r}
+birds %>%
+  group_by(date, ceiling_height) %>%
+  summarize(
+    total_collisions = sum(count),
+    n_buildings = n(),
+    rate = total_collisions / n_buildings,
+    .groups = "drop"
+  ) %>% 
+  ggplot(aes(x = ceiling_height, y = rate)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, linewidth = 1) +
+  scale_y_log10() +
+  labs(
+    title = "Per-Building Collision Rate vs Ceiling Height",
+    x = "Ceiling Height (m)",
+    y = "Collisions per Building"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5))
+
+```
+##Ceiling Height vs. Visibility Distance (do they go hand in hand?)
+Overall seems to be a correlation. 
+```{r}
+#scatter plot
+birds %>%
+  ggplot(aes(x = ceiling_height, y = visibility_distance)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = lm, se = TRUE) +
+  labs(
+    title = "Ceiling Height vs. Visibility Distance",
+    x = "Ceiling Height (m)",
+    y = "Visibility Distance (m)"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5))
+
+```
+
+#Number of observations for each visibility type
+```{r}
+birds %>% 
+  count(visibility) %>% 
+  ggplot(aes(x = visibility,  y = n, fill = visibility)) +
+  geom_col() + 
+  labs(
+    title = "Number of Observations per Visibility Category",
+    x = "Visibility",
+    y = "Count of Observations"
+  )+
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+```
+#Collision rate per observation for each visibiltiy factor (to tackle bias )
+```{r}
+birds %>%
+  group_by(date, visibility) %>%
+  summarize(
+    total_collisions = sum(count),
+    n_buildings = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(visibility) %>%
+  summarize(
+    total_collisions = sum(total_collisions),
+    total_buildings = sum(n_buildings),
+    rate = total_collisions / total_buildings,
+    .groups = "drop"
+  ) %>% 
+  ggplot(aes(x = factor(visibility), y = rate, fill = visibility)) +
+  geom_col() +
+  labs(
+    title = "Collision Rate per Building-Day for Each Visibility Category",
+    x = "Visibility (m)",
+    y = "Collisions per Building-Day"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+
+```
+#Collisions by month 
+```{r}
+birds %>%
+  separate(date, into = c("month", "day", "year"), sep = "/", remove = FALSE) %>%
+  mutate(month = factor(month, levels = as.character(1:12))) %>% #order 
+  group_by(month) %>%
+  summarize(total_collisions = sum(count), .groups = "drop") %>%
+  ggplot(aes(x = month, y = total_collisions, fill = month)) +
+  geom_col() +
+  labs(
+    title = "Total Bird Collisions by Month",
+    x = "Month",
+    y = "Total Collisions"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+
+```
+
+
+##is there a similar monthly trend every year in bird collision count ? 
+```{r}
+birds %>% 
+  separate(col="date", into=c("month", "day", "year"), sep = "/") %>% 
+  select(year, month, count) %>% 
+  mutate(month = factor(month, levels = as.character(1:12))) %>% 
+  group_by(year, month) %>% 
+  summarize(monthly_collision = sum(count), .groups = "drop") %>% 
+  ggplot(aes(x = month, y = monthly_collision)) +
+  geom_col(aes(fill = month)) +
+  facet_grid(~year) + 
+  labs(
+    title = "Monthly Bird Collisions by Year",
+    x = "Month",
+    y = "Total Collisions"
+  )+
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+
+```
+
+#Collisions by building 
+```{r}
+birds %>%
+  group_by(building) %>%
+  summarize(total_collisions = sum(count), .groups = "drop") %>%
+  ggplot(aes(x = reorder(building, total_collisions), y = total_collisions, fill = building)) +
+  geom_col() +
+  labs(
+    title = "Total Bird Collisions by Building",
+    x = "Building",
+    y = "Total Collisions"
+  ) +
+  coord_flip() +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values = colorRampPalette(my_palette)(27))
+```
+
+##Collisions per building per observation (to tackle bias)
+Really different graph showing how there is definitely an observational bias... 
+Building C seems dangerous in first graph, but it isn't the case in reality... it was just monitored more. 
+```{r}
+birds %>%
+  group_by(building) %>%
+  summarize(
+    total_collisions = sum(count),
+    n_obs = n(),   # number of building-day observations
+    rate = total_collisions / n_obs,
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = reorder(building, rate), y = rate, fill = building)) +
+  geom_col() +
+  labs(
+    title = "Average Collision Rate per Building",
+    x = "Building",
+    y = "Collisions per Observation"
+  ) +
+  coord_flip() +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) + 
+  scale_fill_manual(values = colorRampPalette(my_palette)(27))
+
+```
+## Number of observations by volunteers
+```{r, fig.height=11}
+birds %>%
+  group_by(volunteer) %>%
+  summarize(
+    n_obs = n(),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = reorder(volunteer, n_obs), y = n_obs)) +
+  geom_col(fill = "#9FA8DAFF") +
+  coord_flip() +
+  labs(
+    title = "Number of Observations by Volunteer",
+    x = "Volunteer",
+    y = "Number of Observation Days"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.y = element_text(size = 6)  # shrink labels so they don't overlap
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5))
+
+```
+
+
+##volunteers? 
+```{r, fig.height=11}
+
+birds %>%
+  group_by(volunteer) %>%
+  summarize(
+    total_collisions = sum(count),
+    n_obs = n(),
+    rate = total_collisions / n_obs,
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = reorder(volunteer, rate), y = rate)) +
+  geom_col(fill = "#9FA8DAFF") +
+  coord_flip() +
+  labs(
+    title = "Collision Rate per Observation by Volunteer",
+    x = "Volunteer",
+    y = "Collisions per Observation"
+  ) +
+  theme_tufte() +
+  coord_flip() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5))
+
+
+```
+
+##Volunteer with highest collisions per Observation
+Top volunteer matches top months with collisions so seasonal effect (less volunteer effect)
+```{r}
+#Identifying top volunteer
+top_volunteer <- birds %>%
+  group_by(volunteer) %>%
+  summarize(
+    total_collisions = sum(count),
+    n_obs = n(),
+    rate = total_collisions / n_obs,
+    .groups = "drop"
+  ) %>%
+  arrange(desc(rate)) %>% 
+  head(n = 1)
+```
+
+```{r}
+birds %>%
+  separate(date, into = c("month","day","year"), sep = "/") %>% 
+  filter(volunteer == top_volunteer$volunteer) %>% 
+  group_by(month) %>%
+  mutate(
+    month = factor(month, levels = as.character(1:12)) #order month 
+  ) %>% 
+  summarize(
+    n_obs = n(),                     # number of surveys they did in each month
+    total_collisions = sum(count),   # total collisions they found in each month
+    rate = total_collisions / n_obs  # collisions per observation in each month
+  ) %>%
+  ggplot(aes(x = month, y = rate, fill = month)) +
+  geom_col() +
+  labs(
+    title = paste("Monthly Collision Rate for Top Volunteer:", top_volunteer$volunteer),
+    x = "Month",
+    y = "Collisions per Observation"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+
+```
+
+##Making sure there isn't month bias... observation by month 
+Survey effort  not evenly distributed across months, with much  more observations during spring and fall migration periods. This uneven sampling effort may inflate apparent seasonal collision patterns, making it difficult to distinguish true biological seasonality from survey bias.
+```{r}
+birds %>%
+  separate(date, into = c("month","day","year"), sep = "/") %>%
+  mutate(
+    month = factor(month, levels = as.character(1:12)) #order month 
+  ) %>% 
+  count(month) %>%
+  ggplot(aes(x = month, y = n, fill = month)) +
+  geom_col() +
+  labs(
+    title = "Number of Observations per Month",
+    x = "Month",
+    y = "Observation Days"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+
+```
+
