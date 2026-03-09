@@ -15,13 +15,22 @@ library("janitor")
 library(RColorBrewer)
 library(paletteer)
 library(ggthemes)
+library(shiny)
+library(shinydashboard)
 ```
 
 ```{r}
-birds <- bird_collision %>% separate(col="date", into = c("month","day","year"), sep = "/") %>% ##separate month into col
+birds <- read.csv("data/bird_collision.csv") %>% 
+  clean_names()
+```
+
+```{r}
+birds <- birds %>% 
+  separate(col="date", into = c("month","day","year"), sep = "/") %>% ##separate month into col
   select(!day) %>% ##remove day, since data already has a day col
   mutate(month=as.factor(month)) ##make month into a factor
 ```
+
 
 ```{r}
 birds <- birds %>% ##make a new column showing what season, since the data is split by spring or fall
@@ -93,6 +102,62 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
+
+```{r, eval=F, echo=T}
+ui <- dashboardPage(
+  dashboardHeader(title = "Collision Range Predictor"),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+    fluidRow(
+      box(
+        width = 4,
+        selectInput("month", "Month", choices = unique(birds$month)),
+        selectInput("season", "Season", choices = unique(birds$season)),
+        selectInput("building", "Building Type", choices = unique(birds$building)),
+        selectInput("visibility", "Visibility", choices = unique(birds$visibility)),
+        selectInput("x", "X Variable",
+          choices = c("Season" = "season", "Month" = "month",
+                      "Building" = "building", "Visibility" = "visibility")),
+        selectInput("y", "Y Variable",
+          choices = c("Collision Count" = "count", "Temperature" = "temperature",
+                      "Visibility Distance" = "visibility_distance",
+                      "Ceiling Height" = "ceiling_height"))
+      ),
+      box(
+        plotOutput("boxplot", width = "100%", height = "400px")
+        )
+      )
+    )
+  )
+
+server <- function(input, output, session) {
+  
+  filtered <- reactive({
+    birds %>%
+      filter(
+        month == input$month,
+        season == input$season,
+        building == input$building,
+        visibility == input$visibility
+      )
+  })
+  
+  output$boxplot <- renderPlot({
+    filtered() %>%
+      ggplot(aes(x = .data[[input$x]], y = .data[[input$y]])) +
+      geom_boxplot(fill = "#5C6BC0FF", alpha = 0.8) +
+      theme_tufte() +
+      theme(
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        axis.line.x = element_line(color = "black", linewidth = 0.5),
+        axis.line.y = element_line(color = "black", linewidth = 0.5)
+      ) +
+      labs(x=tools::toTitleCase(input$x),y=tools::toTitleCase(input$y),title = "Collision Data Explorer")
+  })
+}
+
+shinyApp(ui, server)
+```
 
 
 ##colors (for theme, use theme_tufte())
