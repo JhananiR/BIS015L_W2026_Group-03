@@ -224,3 +224,48 @@ birds %>%
 
 ```
 
+
+##migration level prob of collision
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, color=migration_level, fill=migration_level, alpha=.7))+
+  geom_density()+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y=NULL, x="Number of collisions", title="Collision count by migration level")+
+  facet_wrap(~migration_level)+
+  theme(legend.position = "none")+
+  scale_x_log10()
+```
+
+##collision count vs visibility level
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, color=visibility, fill=visibility, alpha=.7))+
+  geom_density()+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y=NULL, x="Number of collisions", title="Collision count by visibility level")+
+  facet_wrap(~visibility)+
+  theme(legend.position = "none")+
+  scale_x_log10()
+```
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=visibility, alpha=.4))+
+  geom_density()+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(x="Number of collisions", title="Collision count by migration level")+
+  facet_wrap(~migration_level)+
+  scale_x_log10()
+```
+
+
+

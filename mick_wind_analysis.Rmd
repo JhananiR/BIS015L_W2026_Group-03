@@ -172,6 +172,66 @@ birds %>%
 
 ##boxplots
 
+##vwind
+
+```{r}
+birds %>% 
+  ggplot(aes(x=vwind_level, y=count, fill=migration_level, position="dodge"))+
+  geom_boxplot()+
+  #facet_wrap(~migration_level)+
+  scale_y_log10()+
+  labs(y="Number of collisions",x="North-south wind level", title="North-south wind speed compared to collision count, separated by migration level", fill="Migration level")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)
+```
+
+##vwind
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=vwind_level, color=vwind_level))+
+  geom_density()+
+  facet_wrap(~vwind_level)+
+  scale_x_log10()+
+  labs(y=NULL,x="Collision count", title="North-south wind speed compared to collision count")+
+  theme_tufte()+
+  theme(legend.position = "none")+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)
+```
+
+
+##uwind
+
+```{r}
+birds %>% 
+  ggplot(aes(x=uwind_level, y=count, fill=migration_level, position="dodge"))+
+  geom_boxplot()+
+  #facet_wrap(~migration_level)+
+  scale_y_log10()+
+  labs(y="Number of collisions",x="East-west wind level", title="East-west wind speed compared to collision count, separated by migration level", fill="Migration level")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)
+```
+
+##uwind
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=uwind_level, color=uwind_level))+
+  geom_density()+
+  facet_wrap(~uwind_level)+
+  scale_x_log10()+
+  labs(y=NULL,x="Collision count", title="East-west wind speed compared to collision count")+
+  theme_tufte()+
+  theme(legend.position = "none")+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)
+```
+
+
 ##uwind fall
 
 ```{r, echo=FALSE}
@@ -235,5 +295,36 @@ birds %>%
   scale_fill_manual(values=my_palette)+
   scale_color_manual(values=my_palette)+
   theme(legend.position = "none")
+```
+
+##uwind
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=uwind_level, color=uwind_level))+
+  geom_density()+
+  facet_wrap(~uwind_level)+
+  scale_x_log10()+
+  labs(y="Number of collisions",x="Count", title="East-west wind speed compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  theme(legend.position = "none")
+```
+
+##vwind
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=vwind_level, color=vwind_level))+
+  geom_density()+
+  facet_wrap(~vwind_level)+
+  scale_x_log10()+
+  labs(y="Number of collisions",x="Count", title="North-south wind speed compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  theme(legend.position = "none")
+
 ```
 
