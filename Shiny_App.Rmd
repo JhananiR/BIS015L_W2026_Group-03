@@ -1,0 +1,208 @@
+---
+title: "Shiny_APP_JhananiRamkumar_Group03"
+output: html_document
+date: "2026-03-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+library("tidyverse")
+library("janitor")
+library(RColorBrewer)
+library(paletteer)
+library(ggthemes)
+library(shiny)
+library(shinydashboard)
+```
+
+
+```{
+r message=FALSE, warning=FALSE}
+install.packages("rsconnect")
+library(rsconnect)
+rsconnect::deployApp()
+```
+
+
+
+
+```{r}
+birds <- read.csv("data/bird_collision.csv") %>% 
+  clean_names()
+```
+
+```{r}
+birds <- birds %>% 
+  separate(col="date", into = c("month","day","year"), sep = "/") %>% ##separate month into col
+  select(!day) %>% ##remove day, since data already has a day col
+  mutate(month=as.factor(month)) ##make month into a factor
+```
+
+
+```{r}
+birds <- birds %>% ##make a new column showing what season, since the data is split by spring or fall
+  mutate(season=case_when(
+    month=="4" | month=="5" | month=="6" ~ "spring",
+    month=="8" | month=="9" | month=="10" | month=="11" ~ "fall",
+    .default=NA
+  ))
+```
+
+```{r}
+birds <- birds %>% 
+  mutate(migration_level= case_when( ##migration level from the paper
+    season=="spring" & amt>=4 & amt<=1860 ~ "medium", ##946 is average migration for spring
+    season=="fall" & amt>=9 & amt<=3420 ~ "medium", ##1690 is avg for fall
+    season=="spring" & amt<=4 ~ "low", ##avg-1SD
+    season=="fall" & amt<=9 ~ "low",
+  season=="spring" & amt>=1860 ~ "high", ##avg+1SD
+    season=="fall" & amt>=3420 ~ "high"
+  ))
+```
+
+```{r}
+names(birds)
+```
+
+
+```{r}
+my_palette <- paletteer_d("ggsci::indigo_material")
+my_palette
+```
+## Actual Shiny App for Project
+```{r, eval=F, echo=T}
+ui <- dashboardPage(
+  
+  dashboardHeader(title="Collision Predictor"),
+  
+  dashboardSidebar(disable=T),
+  
+  dashboardBody(
+    fluidRow(
+      box(
+  selectInput("building", "Building Type",
+                    choices = unique(birds$building),
+                    selected = unique(birds$building)[1]),
+        selectInput("visibility", "Visibility",
+                    choices = unique(birds$visibility),
+                    selected = unique(birds$visibility)[1]),
+        selectInput("migration_level", "Migration Level",
+                    choices = unique(birds$migration_level),
+                    selected = unique(birds$migration_level)[1])
+      ),
+      box(
+        plotOutput("plot", width="500px", height="400px")
+  
+   )
+    )
+)
+
+)
+
+server <- function(input, output, session) {
+  
+  
+  filtered <- reactive({
+    birds %>%
+      filter(building == input$building,
+             visibility == input$visibility,
+             migration_level == input$migration_level)
+  })
+  
+  
+  output$plot <- renderPlot({
+    filtered() %>% 
+      ggplot(aes(x = count)) +
+      geom_density(fill = "#5C6BC0FF", alpha = 0.5) +
+      scale_fill_viridis_d() +
+      scale_x_continuous(limits = c(0, 5)) +
+      theme_tufte() +
+      theme(plot.title = element_text(size = 20),
+            axis.title.x = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.line.x = element_line(color = "black", linewidth = 0.3),
+            axis.line.y = element_line(color = "black", linewidth = 0.3),
+            axis.text.x = element_text(angle=45,hjust=1),
+            legend.position = "right")+
+      labs(x = "Collision Count", 
+           y = "Density", 
+           title = paste("Collision Distribution -", as.character(input$building), "|", as.character(input$visibility), "|",
+as.character(input$migration_level)))
+  })
+  
+  
+}
+
+shinyApp(ui, server)
+```
+
+
+```{r, eval=F, echo=T}
+ui <- dashboardPage(
+  dashboardHeader(title = "Collision Range Predictor",
+                  titleWidth = 300),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+    fluidRow(
+      box(
+        width = 4,
+        selectInput("month", "Month", choices = unique(birds$month)),
+        selectInput("building", "Building Type", choices = unique(birds$building)),
+        selectInput("visibility", "Visibility", choices = unique(birds$visibility))
+        #selectInput("x", "X Variable",
+          #choices = c("Month" = "month",
+                      #"Building" = "building", "Visibility" = "visibility")),
+        #selectInput("y", "Y Variable",
+          #choices = c("Collision Count" = "count", "Temperature" = "temperature",
+                      #"Visibility Distance" = "visibility_distance",
+                      #"Ceiling Height" = "ceiling_height"))
+      ),
+      box(
+        width = 6,
+        plotOutput("boxplot", height = "500px")
+        )
+      )
+    )
+  )
+
+server <- function(input, output, session) {
+  
+  filtered <- reactive({
+    birds %>%
+      filter(
+        month == input$month,
+        #season == input$season,
+        building == input$building,
+        visibility == input$visibility
+      )
+  })
+  
+  output$boxplot <- renderPlot({
+    filtered() %>%
+      ggplot(aes(y = count)) +  #y = .data[[input$y]]
+      geom_boxplot(fill = "#5C6BC0FF", alpha = 0.8) +
+      theme_tufte() +
+      theme(
+        plot.title = element_text(size = 20, hjust = 0.5),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.line.x = element_line(color = "black", linewidth = 0.5),
+        axis.line.y = element_line(color = "black", linewidth = 0.5)
+      ) +
+      labs(y="Count",title = "Collision Data Range")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+
+##colors (for theme, use theme_tufte())
+```{r}
+colors <- paletteer::palettes_d_names
+```

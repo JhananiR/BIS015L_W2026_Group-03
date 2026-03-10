@@ -3,9 +3,6 @@ Exploratory Project for BIS15L - Group 3
 
 Members: Mick Scrven, Jhanani Ramkumar, Jina Moon
 
-Subject of interest: TBD
-Link to Article: TBD 
-
 # Exploratory Project for BIS15L - Group 3
 
 ## Members:
@@ -20,7 +17,11 @@ Link to Article: <https://besjournals.onlinelibrary.wiley.com/doi/10.1111/1365-2
 
 ## Possible things that we will be looking at:
 
--   option 1 (brainstorm and add)
--   option 2
--   option 3
+-   Wind
+-   Temperature
+-   Visibility
+-   Ceiling Height
+-   Biases
+-   Shiny App
+
 
