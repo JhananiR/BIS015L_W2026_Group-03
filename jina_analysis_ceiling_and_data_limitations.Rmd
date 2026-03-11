@@ -11,8 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Load Libraries
 ```{r, echo=FALSE}
-library("tidyverse")
-library("janitor")
+library(tidyverse)
+library(janitor)
 library(RColorBrewer)
 library(paletteer)
 library(ggthemes)
@@ -32,6 +32,7 @@ colors <- paletteer::palettes_d_names
 my_palette <- paletteer_d("ggsci::indigo_material")
 my_palette
 ```
+
 ##Ceiling height vs. collisions
 ```{r}
 birds %>% 
@@ -39,8 +40,8 @@ birds %>%
   summarize(total_collisions = sum(count), .groups = "drop") %>% 
   filter(total_collisions < 100) %>% #gets rid of one outlier that was identified for graph readability
   ggplot(aes(x = ceiling_height, y = total_collisions)) +
-  geom_jitter(width = 0, height = 0.15, alpha = 0.5, color = "darkgray") +
-  geom_smooth(method = "lm", se = TRUE, linewidth = 1) +
+  geom_jitter(width = 0, height = 0.15, alpha = 0.6, color = "#283593FF") +
+  geom_smooth(method = "lm", se = TRUE, linewidth = 1,color = "black", fill = "black") +
   scale_y_log10() +
   labs(
     title = "Daily Bird Collisions vs. Cloud Ceiling Height",
@@ -73,29 +74,82 @@ birds %>%
   labs(
     title = "Number of Observations per Building",
     x = "Building",
-    y = "Number of days recorded"
+    y = "Number of Observations (day)"
   ) +
   theme_tufte() +
   theme(plot.title = element_text(size=rel(1.2), hjust = .5))+
   scale_fill_manual(values = colorRampPalette(my_palette)(27)) #using my palette, but let R fill in gaps
 ```
 
-##Collision rate per building to tackle bias in number of building 
+##BIG BIAS in observations for buildings... 
+```{r}
+birds %>% 
+  group_by(building) %>% 
+  count() %>% 
+  arrange(desc(n))
+```
+
+g at 483 observations
+n at only 7 observations... 
+Big thing to keep a look out for would really be making sure that the number of observations isn't what impacts number of collisions...
+
+
+```{r}
+building_observation_summary <- birds %>%
+  group_by(building) %>%
+  summarize(
+    obs_days = n_distinct(date),
+    total_collisions = sum(count),
+    .groups = "drop"
+  ) %>%  #we get total collisions and number of days the building was observed
+  mutate(obs_bin = cut(obs_days, breaks = seq(0, 500, by = 20))) #seq is 0 to 500 since max n is 483
+
+
+bin_calculations <- building_observation_summary %>%
+  group_by(obs_bin) %>%
+  summarize(
+    mean_collisions = mean(total_collisions),
+    median_collisions = median(total_collisions),
+    n_buildings = n(),
+    .groups = "drop"
+  )
+ggplot(bin_summary, aes(x = obs_bin, y = mean_collisions, group = 1)) +
+  geom_line() +
+  geom_point(size = 3) +
+  labs(
+    title = "Average Total Collisions by Observation-Day Bin",
+    x = "Observation-Day Bin",
+    y = "Average Total Collisions"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+birds %>% 
+  filter(building == "n")
+```
+
+... they really only had observations for building n for like... very few days... 
+
+okay so for for  data, some buildings only had observations 7 times in a month, while others had observations 200 times in the month right. but if we are looking at ranges for collisions, most of the observations are 0, so the one with 200 observations would be more 0 oriented, while the one with 7 observations might be skewed due to not having 0 to bring it down..
+
+
+##Collision rate by building count to tackle bias in different number of building observed per day
 ```{r}
 birds %>%
   group_by(date, ceiling_height) %>%
   summarize(
     total_collisions = sum(count),
     n_buildings = n(),
-    rate = total_collisions / n_buildings,
+    rate = total_collisions / n_buildings, #determines average rate of collisions each day, for the number of buildings observed
     .groups = "drop"
   ) %>% 
   ggplot(aes(x = ceiling_height, y = rate)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = TRUE, linewidth = 1) +
+  geom_point(alpha = 0.6, color = "#283593FF") +
+  geom_smooth(method = "lm", se = TRUE, linewidth = 1, color = "black", fill = "black") +
   scale_y_log10() +
   labs(
-    title = "Per-Building Collision Rate vs Ceiling Height",
+    title = "Average collisions per Building vs Ceiling Height",
     x = "Ceiling Height (m)",
     y = "Collisions per Building"
   ) +
@@ -109,15 +163,15 @@ Overall seems to be a correlation.
 #scatter plot
 birds %>%
   ggplot(aes(x = ceiling_height, y = visibility_distance)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = lm, se = TRUE) +
+  geom_point(alpha = 0.6, color = "#283593FF") +
+  geom_smooth(method = lm, se = TRUE, color = "black", fill = "black") +
   labs(
     title = "Ceiling Height vs. Visibility Distance",
     x = "Ceiling Height (m)",
     y = "Visibility Distance (m)"
   ) +
   theme_tufte() +
-  theme(plot.title = element_text(size=rel(1.2), hjust = .5))
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) 
 
 ```
 
@@ -142,20 +196,20 @@ birds %>%
   group_by(date, visibility) %>%
   summarize(
     total_collisions = sum(count),
-    n_buildings = n(),
+    n_buildings = n(), #
     .groups = "drop"
-  ) %>%
+  ) %>% #gives us number of buildings and total collisions per day 
   group_by(visibility) %>%
   summarize(
     total_collisions = sum(total_collisions),
     total_buildings = sum(n_buildings),
-    rate = total_collisions / total_buildings,
+    rate = total_collisions / total_buildings, #average collisions per buildings 
     .groups = "drop"
   ) %>% 
   ggplot(aes(x = factor(visibility), y = rate, fill = visibility)) +
   geom_col() +
   labs(
-    title = "Collision Rate per Building-Day for Each Visibility Category",
+    title = "Collision Rate per Building for Each Visibility Category",
     x = "Visibility (m)",
     y = "Collisions per Building-Day"
   ) +
@@ -164,6 +218,54 @@ birds %>%
   scale_fill_manual(values=my_palette[3:10])
 
 ```
+
+```{r}
+birds%>%
+  count(building)
+```
+
+```{r}
+birds%>%
+  ggplot(aes(x=visibility, y=count))+
+  geom_boxplot()+
+  scale_y_log10()
+```
+
+```{r}
+birds%>%
+  ggplot(aes(x=building, y=count))+
+  geom_boxplot()+
+  scale_y_log10()+
+  facet_wrap(~visibility)
+```
+
+
+
+
+
+
+```{r}
+birds %>%
+  group_by(date, visibility) %>%
+  summarize(
+    total_collisions = sum(count),
+    n_buildings = n(), #
+    .groups = "drop"
+  ) %>% #gives us number of buildings and total collisions per day 
+  mutate(avg_collisions_by_building_per_day = total_collisions / n_buildings) %>% 
+  ggplot(aes(x = visibility, y = avg_collisions_by_building_per_day)) +
+  scale_y_log10() +
+  geom_boxplot(mapping=aes(fill = visibility)) + 
+  labs(
+    title = "Average Collisions per Building by Visibility",
+    x = "Visibility (m)",
+    y = "Collisions per Building-Day"
+  ) +
+  theme_tufte() +
+  theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
+  scale_fill_manual(values=my_palette[3:10])
+```
+
 #Collisions by month 
 ```{r}
 birds %>%
