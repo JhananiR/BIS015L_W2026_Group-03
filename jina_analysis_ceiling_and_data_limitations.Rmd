@@ -23,7 +23,7 @@ library(ggthemes)
 birds <- read.csv("data/bird_collision.csv") %>% clean_names()
 ```
 
-##Separate date column
+##Separate date column (DONE BY MICK)
 
 ```{r}
 birds <- birds %>% separate(col="date", into = c("month","day","year"), sep = "/", remove = F) %>% ##separate month into col
@@ -31,7 +31,7 @@ birds <- birds %>% separate(col="date", into = c("month","day","year"), sep = "/
   mutate(month=as.factor(month)) ##make month into a factor
 ```
 
-##Add season variable
+##Add season variable (DONE BY MICK)
 
 ```{r}
 birds <- birds %>% ##make a new column showing what season, since the data is split by spring or fall
@@ -42,7 +42,7 @@ birds <- birds %>% ##make a new column showing what season, since the data is sp
   ))
 ```
 
-##Adding migration level variable based on the paper
+##Adding migration level variable based on the paper(DONE BY MICK)
 
 ```{r}
 birds <- birds %>% 
@@ -56,7 +56,7 @@ birds <- birds %>%
   ))
 ```
 
-##Separate wind speed into low, med, high with same method as migration level: low<= avg-1SD, med<= avg+1SD, >= avg-1SD, high>=avg+1SD. I took the absolute value of the winds first, since negative wind is just the opposite direction of positive, and I want to compare strength, not direction
+##Separate wind speed into low, med, high with same method as migration level: low<= avg-1SD, med<= avg+1SD, >= avg-1SD, high>=avg+1SD. I took the absolute value of the winds first, since negative wind is just the opposite direction of positive, and I want to compare strength, not direction (DONE BY MICK)
 
 ```{r}
 birds %>% 
@@ -334,7 +334,12 @@ birds%>%
   facet_wrap(~visibility) +
   theme_tufte() +
   theme(plot.title = element_text(size=rel(1.2), hjust = .5)) +
-  scale_fill_manual(values = colorRampPalette(my_palette)(27))
+  scale_fill_manual(values = colorRampPalette(my_palette)(27)) + 
+  labs(
+    title = "Range of Collisions by Building by Visibility",
+    x = "Visibility",
+    y = "Collisions by Building"
+  )
 ```
 
 
@@ -356,7 +361,7 @@ birds %>%
   geom_boxplot(mapping=aes(fill = visibility)) + 
   labs(
     title = "Average Collisions per Building by Visibility",
-    x = "Visibility (m)",
+    x = "Visibility",
     y = "Collisions per Building-Day"
   ) +
   theme_tufte() +
