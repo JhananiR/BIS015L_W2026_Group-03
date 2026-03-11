@@ -5,13 +5,13 @@ date: "2026-03-07"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
 ```
 
 Does temperature affect collision numbers? 
 Visibility and collisions (barplot??? boxplot???) … acknowledge not having bunch of “high” vs. “low” visibility → could be a separate table… how much data set is in each. 
 
-```{r, echo=FALSE}
+```{r}
 library("tidyverse")
 library("janitor")
 library(RColorBrewer)
@@ -19,31 +19,32 @@ library(paletteer)
 library(ggthemes)
 ```
 
-```{r, echo=FALSE}
+```{r}
 birds <- read.csv("data/bird_collision.csv")
 ```
 
-##colors
-```{r}
+**colors**
+```{r, echo=TRUE}
 colors <- paletteer::palettes_d_names
 ```
-```{r}
+```{r, echo=TRUE}
 my_palette <- paletteer_d("ggsci::indigo_material")
 my_palette
 ```
 
+#**Adding variables**
 
-##Separate date column
+Separate date column
 
-```{r}
+```{r, echo=TRUE}
 birds <- birds %>% separate(col="date", into = c("month","day","year"), sep = "/") %>% ##separate month into col
   select(!day) %>% ##remove day, since data already has a day col
   mutate(month=as.factor(month)) ##make month into a factor
 ```
 
-##Add season variable
+Add season variable
 
-```{r}
+```{r, echo=TRUE}
 birds <- birds %>% ##make a new column showing what season, since the data is split by spring or fall
   mutate(season=case_when(
     month=="4" | month=="5" | month=="6" ~ "spring",
@@ -52,9 +53,9 @@ birds <- birds %>% ##make a new column showing what season, since the data is sp
   ))
 ```
 
-##Adding migration level variable based on the paper
+Adding migration level variable based on the paper
 
-```{r}
+```{r, echo=TRUE}
 birds <- birds %>% 
   mutate(migration_level= case_when( ##migration level from the paper
     season=="spring" & amt>=4 & amt<=1860 ~ "medium", ##946 is average migration for spring
@@ -66,16 +67,16 @@ birds <- birds %>%
   ))
 ```
 
-##Separate wind speed into low, med, high with same method as migration level: low<= avg-1SD, med<= avg+1SD, >= avg-1SD, high>=avg+1SD. I took the absolute value of the winds first, since negative wind is just the opposite direction of positive, and I want to compare strength, not direction
+Separate wind speed into low, med, high with same method as migration level: low<= avg-1SD, med<= avg+1SD, >= avg-1SD, high>=avg+1SD. I took the absolute value of the winds first, since negative wind is just the opposite direction of positive, and I want to compare strength, not direction
 
-```{r}
+```{r, echo=TRUE}
 birds %>% 
   group_by(season) %>% 
   mutate(uwind_abs=abs(uwind), vwind_abs=abs(vwind)) %>% 
   summarise(mean(uwind_abs), sd(uwind_abs), mean(vwind_abs), sd(vwind_abs))
 ```
 
-```{r}
+```{r, echo=TRUE}
 birds <- birds %>% 
   mutate(uwind_abs=abs(uwind), vwind_abs=abs(vwind)) %>%
   mutate(uwind_level= case_when(
@@ -96,15 +97,51 @@ birds <- birds %>%
   ))
 ```
 
+wind direction variable: positive vwind values indicating winds coming from the south, positive uwind values indicating winds coming from the west
+
+```{r, echo=TRUE}
+birds <- birds %>% 
+  mutate(uwind_direction= case_when(
+    uwind>0 ~"west to east",
+    uwind<0 ~"east to west", 
+    uwind==0 ~"still",
+  )) %>% 
+  mutate(vwind_direction= case_when(
+    vwind>0 ~"south to north",
+    vwind<0 ~"north to south", 
+    vwind==0 ~"still",
+
+  ))
+```
+
 ```{r}
 names(birds)
 ```
 
-##Does wind affect collision numbers? (do separate for uwind and vwind) 
+#**wind**
+Does wind affect collision numbers? (do separate for uwind and vwind) 
 
-##uwind spring
+##uwind spring not separated by migration level
 
-```{r, echo=FALSE}
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=uwind, y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black", se=T)+
+  theme(legend.position = "bottom")+
+  labs(y="Number of collisions",x="East-west wind speed (m/s)", title="East-west wind speed compared to collision count in spring")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")+
+  coord_cartesian(ylim=c(0,4))
+```
+
+
+##uwind spring separated by migration level
+
+```{r}
 birds %>% 
   filter(season=="spring") %>% 
   ggplot(aes(x=uwind, y=count, color=migration_level))+
@@ -112,16 +149,16 @@ birds %>%
   geom_smooth(method=lm, color="black", se=T)+
   facet_wrap(~migration_level)+
   theme(legend.position = "bottom")+
-  labs(y="Number of collisions",x="East-west wind speed (m/s)", title="East-west wind speed compared to collision count in spring, separated by migration level", color="Migration level")+
+  labs(y="Number of collisions",x="East-west wind speed (m/s)", title="East-west wind speed compared to collision count in spring, separated by migration level")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
   theme(legend.position = "none")
 ```
 
-##uwind fall
+##uwind fall separated by migration level
 
-```{r, echo=FALSE}
+```{r}
 birds %>% 
   filter(season=="fall") %>% 
   ggplot(aes(x=uwind, y=count, color=migration_level))+
@@ -129,16 +166,33 @@ birds %>%
   geom_smooth(method=lm, color="black", se=T)+
   facet_wrap(~migration_level)+
   scale_y_log10()+
-  labs(y="Number of collisions",x="East-west wind speed (m/s)", title="East-west wind speed compared to collision count in fall, separated by migration level", color="Migration level")+
+  labs(y="Number of collisions",x="East-west wind speed (m/s)", title="East-west wind speed compared to collision count in fall, separated by migration level")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
   theme(legend.position = "none")
 ```
 
-##vwind fall
+##uwind fall not separated by migration level
 
-```{r, echo=FALSE}
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=uwind, y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black", se=T)+
+  labs(y="Number of collisions",x="East-west wind speed (m/s)", title="East-west wind speed compared to collision count in fall")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")+
+  coord_cartesian(ylim=c(0,30))
+```
+
+
+##vwind fall separated by migration level
+
+```{r}
 birds %>% 
   filter(season=="fall") %>% 
   ggplot(aes(x=vwind, y=count, color=migration_level))+
@@ -146,7 +200,7 @@ birds %>%
   geom_smooth(method=lm, color="black", se=T)+
   facet_wrap(~migration_level)+
   scale_y_log10()+
-  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in fall, separated by migration level", color="Migration level")+
+  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in fall, separated by migration level")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
@@ -154,25 +208,73 @@ birds %>%
 
 ```
 
-##vwind spring
+##vwind fall not separated by migration level
 
-```{r, echo=FALSE}
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=vwind, y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black", se=T)+
+  scale_y_log10()+
+  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in fall, separated by migration level")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+
+##vwind spring separated by migration level
+
+```{r}
 birds %>% 
   filter(season=="spring") %>% 
   ggplot(aes(x=vwind, y=count, color=migration_level))+
   geom_point()+
   geom_smooth(method=lm, color="black", se=T)+
   facet_wrap(~migration_level)+
-  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in spring, separated by migration level", color="Migration level")+
+  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in spring, separated by migration level")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
   theme(legend.position = "none")
 ```
 
-##boxplots
+##vwind spring not separated by migration level
 
-##vwind
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=vwind, y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black", se=T)+
+  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count in spring")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+##all season vwind not separated by migration level
+
+```{r}
+birds %>% 
+  ggplot(aes(x=vwind, y=count, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black", se=T)+
+  scale_y_log10()+
+  labs(y="Number of collisions",x="North-south wind speed (m/s)", title="North-south wind speed compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+
+#boxplots and density plots
+
+##vwind boxplot
 
 ```{r}
 birds %>% 
@@ -186,7 +288,7 @@ birds %>%
   scale_color_manual(values=my_palette)
 ```
 
-##vwind
+##vwind density plot
 
 ```{r}
 birds %>% 
@@ -202,7 +304,7 @@ birds %>%
 ```
 
 
-##uwind
+##uwind boxplot
 
 ```{r}
 birds %>% 
@@ -216,7 +318,7 @@ birds %>%
   scale_color_manual(values=my_palette)
 ```
 
-##uwind
+##uwind density plot
 
 ```{r}
 birds %>% 
@@ -232,9 +334,9 @@ birds %>%
 ```
 
 
-##uwind fall
+##uwind fall boxplot
 
-```{r, echo=FALSE}
+```{r}
 birds %>% 
   filter(season=="fall") %>% 
   ggplot(aes(x=uwind_level, y=count, fill=migration_level, position="dodge"))+
@@ -249,9 +351,9 @@ birds %>%
 
 ```
 
-##uwind spring
+##uwind spring boxplot
 
-```{r, echo=FALSE}
+```{r}
 birds %>% 
   filter(season=="spring") %>% 
   ggplot(aes(x=uwind_level, y=count, fill=migration_level, position="dodge"))+
@@ -265,9 +367,9 @@ birds %>%
   theme(legend.position = "none")
 ```
 
-##vwind fall
+##vwind fall boxplot
 
-```{r, echo=FALSE}
+```{r}
 birds %>% 
   filter(season=="fall") %>% 
   ggplot(aes(x=vwind_level, y=count, fill=migration_level, position="dodge"))+
@@ -281,9 +383,9 @@ birds %>%
     theme(legend.position = "none")
 ```
 
-##vwind spring
+##vwind spring boxplot
 
-```{r, echo=FALSE}
+```{r}
 birds %>% 
   filter(season=="spring") %>% 
   ggplot(aes(x=vwind_level, y=count, fill=migration_level, position="dodge"))+
@@ -297,7 +399,7 @@ birds %>%
   theme(legend.position = "none")
 ```
 
-##uwind
+##uwind density
 
 ```{r}
 birds %>% 
@@ -312,7 +414,7 @@ birds %>%
   theme(legend.position = "none")
 ```
 
-##vwind
+##vwind density
 
 ```{r}
 birds %>% 
@@ -328,3 +430,138 @@ birds %>%
 
 ```
 
+##north or south, east or west density plots
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=uwind_direction, color=uwind_direction))+
+  geom_density()+
+  facet_wrap(~uwind_direction)+
+  scale_x_log10()+
+  labs(x="Count", title="East-west wind direction compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  theme(legend.position = "none")
+```
+
+```{r}
+birds %>% 
+  ggplot(aes(x=count, fill=vwind_direction, color=vwind_direction))+
+  geom_density()+
+  facet_wrap(~vwind_direction)+
+  scale_x_log10()+
+  labs(x="Count", title="North-south wind direction compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  theme(legend.position = "none")
+```
+
+paper suggests this differs by season:
+north-south:
+
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=count, fill=vwind_direction, color=vwind_direction))+
+  geom_density()+
+  facet_wrap(~vwind_direction)+
+  scale_x_log10()+
+  labs(x="Count", title="North-south wind direction compared to collision count in spring")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  theme(legend.position = "none")
+```
+
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=count, fill=vwind_direction, color=vwind_direction))+
+  geom_density()+
+  facet_wrap(~vwind_direction)+
+  scale_x_log10()+
+  labs(x="Count", title="North-south wind direction compared to collision count in fall")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette)+
+  scale_color_manual(values=my_palette)+
+  theme(legend.position = "none")
+```
+
+boxplots for direction
+
+```{r}
+birds %>% 
+  ggplot(aes(x=uwind_direction, y=count, fill=uwind_direction, color=uwind_direction))+
+  geom_boxplot()+
+  labs(x="Wind direction", y="collision count", title="East-west wind direction compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+```{r}
+birds %>% 
+  ggplot(aes(x=vwind_direction, y=count, fill=vwind_direction, color=vwind_direction))+
+  geom_boxplot()+
+  labs(x="Wind direction", y="collision count", title="North-south wind direction compared to collision count")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+paper suggests this differs by season:
+north-south:
+
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=vwind_direction, y=count, fill=vwind_direction, color=vwind_direction))+
+  geom_boxplot()+
+  labs(x="Wind direction", y="collision count", title="North-south wind direction compared to collision count in spring")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=vwind_direction, y=count, fill=vwind_direction, color=vwind_direction))+
+  geom_boxplot()+
+  labs(x="Wind direction", y="collision count", title="North-south wind direction compared to collision count in fall")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+east-west:
+
+```{r}
+birds %>% 
+  filter(season=="spring") %>% 
+  ggplot(aes(x=uwind_direction, y=count, fill=uwind_direction, color=uwind_direction))+
+  geom_boxplot()+
+  labs(x="Wind direction", y="collision count", title="East-west wind direction compared to collision count in spring")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```
+
+```{r}
+birds %>% 
+  filter(season=="fall") %>% 
+  ggplot(aes(x=uwind_direction, y=count, fill=uwind_direction, color=uwind_direction))+
+  geom_boxplot()+
+  labs(x="Wind direction", y="collision count", title="East-west wind direction compared to collision count in fall")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+
+  scale_color_manual(values=my_palette[3:10])+
+  theme(legend.position = "none")
+```

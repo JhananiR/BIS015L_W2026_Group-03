@@ -134,6 +134,22 @@ birds %>%
 
 ```
 
+##temp vs amt
+
+```{r}
+birds %>% 
+  ggplot(aes(x=temperature,y=amt, color=migration_level))+
+  geom_point()+
+  geom_smooth(method=lm, color="black")+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y="Average migration traffic",x="Temperature (ºC)", title="Temperature compared to migration traffic")+
+  scale_y_log10()+
+    theme(legend.position = "none")
+```
+
+
 ##visibility
 
 ##
