@@ -432,6 +432,8 @@ birds %>%
   scale_fill_manual(values = my_palette[3:10])
 ```
 
+
+
 ```{r}
 daily_totals <- birds %>%
   group_by(date, visibility) %>%
