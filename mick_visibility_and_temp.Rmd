@@ -63,6 +63,16 @@ birds <- birds %>%
   ))
 ```
 
+Revelation: There are so few data points in the low/high categories!! I took this directly from the paper!! What the heck!
+
+```{r}
+birds %>% 
+  count(migration_level) %>% 
+  ggplot(aes(x=migration_level, y=n))+
+  geom_col()
+```
+
+
 ##Separate wind speed into low, med, high with same method as migration level: low<= avg-1SD, med<= avg+1SD, >= avg-1SD, high>=avg+1SD. I took the absolute value of the winds first, since negative wind is just the opposite direction of positive, and I want to compare strength, not direction
 
 ```{r}
@@ -93,62 +103,25 @@ birds <- birds %>%
   ))
 ```
 
+
 ```{r}
 names(birds)
 ```
 
 ##temp analysis
 
-##spring
-
 ```{r}
 birds %>% 
-  filter(season=="spring") %>% 
-  ggplot(aes(x=temperature,y=count, color=migration_level))+
+  ggplot(aes(x=temperature,y=count, color=migration_level, size=amt))+
   geom_point()+
   geom_smooth(method=lm, color="black")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
-  labs(y="Number of collisions",x="Temperature (ºC)", title="Temperature compared to collision count in spring, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)+
-  theme(legend.position = "none")
-
+  labs(y="Number of collisions (log10)",x="Temperature (ºC)", title="Temperature compared to collision count, sized by migration level", color="Migration level")+
+  theme(legend.position = "none")+
+  scale_y_log10()
 ```
-
-##fall
-
-```{r}
-birds %>% 
-  filter(season=="fall") %>% 
-  ggplot(aes(x=temperature,y=count, color=migration_level))+
-  geom_point()+
-  geom_smooth(method=lm, color="black")+
-  theme_tufte()+
-  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
-  scale_color_manual(values=my_palette[3:10])+
-  labs(y="Number of collisions",x="Temperature (ºC)", title="Temperature compared to collision count in fall, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)+
-  scale_y_log10()+
-    theme(legend.position = "none")
-
-```
-
-##temp vs amt
-
-```{r}
-birds %>% 
-  ggplot(aes(x=temperature,y=amt, color=migration_level))+
-  geom_point()+
-  geom_smooth(method=lm, color="black")+
-  theme_tufte()+
-  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
-  scale_color_manual(values=my_palette[3:10])+
-  labs(y="Average migration traffic",x="Temperature (ºC)", title="Temperature compared to migration traffic")+
-  scale_y_log10()+
-    theme(legend.position = "none")
-```
-
 
 ##visibility
 
@@ -174,14 +147,13 @@ birds %>%
 ```{r}
 birds %>% 
   filter(season=="spring") %>% 
-  ggplot(aes(x=visibility_distance, y=count, color = migration_level))+
+  ggplot(aes(x=visibility_distance, y=count, color = migration_level, size=amt))+
   geom_point()+
   geom_smooth(method=lm, color="black")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
-  labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in spring, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)+
+  labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in spring, sized by migration level", color="Migration level")+
   theme(legend.position = "none")
 
 ```
@@ -191,14 +163,13 @@ birds %>%
 ```{r}
 birds %>% 
   filter(season=="fall") %>% 
-  ggplot(aes(x=visibility_distance, y=count, color = migration_level))+
+  ggplot(aes(x=visibility_distance, y=count, color = migration_level, size=amt))+
   geom_point()+
   geom_smooth(method=lm, color="black")+
   theme_tufte()+
   scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
   scale_color_manual(values=my_palette[3:10])+
-  labs(y="Number of collisions",x="Visibility distance (m)", title="Visibility distance compared to collision count in fall, separated by migration level", color="Migration level")+
-  facet_wrap(~migration_level)+
+  labs(y="Number of collisions (log10)",x="Visibility distance (m)", title="Visibility distance compared to collision count in fall, sized by migration level", color="Migration level")+
   scale_y_log10()+
   theme(legend.position = "none")
 
@@ -255,6 +226,20 @@ birds %>%
   theme(legend.position = "none")+
   scale_x_log10()
 ```
+
+```{r}
+birds %>% 
+  ggplot(aes(x=amt, y=count))+
+  geom_point(color=my_palette[4])+
+  geom_smooth(method = "lm", color=my_palette[6])+
+  theme_tufte()+
+  scale_fill_manual(values=my_palette[3:10])+ ##first two colors were too light for a scatterplot, so i removed them here
+  scale_color_manual(values=my_palette[3:10])+
+  labs(y=NULL, x="Average migration traffic", y="number of collisions", title="Collision count by migration level")+
+  theme(legend.position = "none")+
+  coord_cartesian(ylim=c(0,30))
+```
+
 
 ##collision count vs visibility level
 
