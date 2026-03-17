@@ -10,9 +10,9 @@
 
 
 
-<meta name="date" content="2026-03-07" />
+<meta name="date" content="2026-03-08" />
 
-<title>base data import and color/theme</title>
+<title>Shiny_APP_JhananiRamkumar_Group03</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -349,106 +349,145 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">base data import and color/theme</h1>
-<h4 class="date">2026-03-07</h4>
+<h1 class="title toc-ignore">Shiny_APP_JhananiRamkumar_Group03</h1>
+<h4 class="date">2026-03-08</h4>
 
 </div>
 
 
-<pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-## ✔ dplyr     1.2.0     ✔ readr     2.2.0
-## ✔ forcats   1.0.1     ✔ stringr   1.6.0
-## ✔ ggplot2   4.0.2     ✔ tibble    3.3.1
-## ✔ lubridate 1.9.5     ✔ tidyr     1.3.2
-## ✔ purrr     1.2.1     
-## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()
-## ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors
-## 
-## Attaching package: &#39;janitor&#39;
-## 
-## 
-## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     chisq.test, fisher.test</code></pre>
-<p>##colors (for theme, use theme_tufte())</p>
-<pre class="r"><code>colors &lt;- paletteer::palettes_d_names</code></pre>
-<pre class="r"><code>my_palette &lt;- paletteer_d(&quot;ggsci::indigo_material&quot;)
-my_palette</code></pre>
-<pre><code>## &lt;colors&gt;
-## #E8EAF6FF #C5CAE9FF #9FA8DAFF #7986CBFF #5C6BC0FF #3F51B5FF #3949ABFF #303F9FFF #283593FF #1A237EFF</code></pre>
-<p>##Separate date column</p>
-<pre class="r"><code>birds &lt;- birds %&gt;% separate(col=&quot;date&quot;, into = c(&quot;month&quot;,&quot;day&quot;,&quot;year&quot;), sep = &quot;/&quot;) %&gt;% ##separate month into col
-  select(!day) %&gt;% ##remove day, since data already has a day col
-  mutate(month=as.factor(month)) ##make month into a factor</code></pre>
-<p>##Add season variable</p>
-<pre class="r"><code>birds &lt;- birds %&gt;% ##make a new column showing what season, since the data is split by spring or fall
-  mutate(season=case_when(
-    month==&quot;4&quot; | month==&quot;5&quot; | month==&quot;6&quot; ~ &quot;spring&quot;,
-    month==&quot;8&quot; | month==&quot;9&quot; | month==&quot;10&quot; | month==&quot;11&quot; ~ &quot;fall&quot;,
-    .default=NA
-  ))</code></pre>
-<p>##Adding migration level variable based on the paper</p>
-<pre class="r"><code>birds &lt;- birds %&gt;% 
-  mutate(migration_level= case_when( ##migration level from the paper
-    season==&quot;spring&quot; &amp; amt&gt;=4 &amp; amt&lt;=1860 ~ &quot;medium&quot;, ##946 is average migration for spring
-    season==&quot;fall&quot; &amp; amt&gt;=9 &amp; amt&lt;=3420 ~ &quot;medium&quot;, ##1690 is avg for fall
-    season==&quot;spring&quot; &amp; amt&lt;=4 ~ &quot;low&quot;, ##avg-1SD
-    season==&quot;fall&quot; &amp; amt&lt;=9 ~ &quot;low&quot;,
-  season==&quot;spring&quot; &amp; amt&gt;=1860 ~ &quot;high&quot;, ##avg+1SD
-    season==&quot;fall&quot; &amp; amt&gt;=3420 ~ &quot;high&quot;
-  ))</code></pre>
-<p>##Separate wind speed into low, med, high with same method as
-migration level: low&lt;= avg-1SD, med&lt;= avg+1SD, &gt;= avg-1SD,
-high&gt;=avg+1SD. I took the absolute value of the winds first, since
-negative wind is just the opposite direction of positive, and I want to
-compare strength, not direction</p>
-<pre class="r"><code>birds %&gt;% 
-  group_by(season) %&gt;% 
-  mutate(uwind_abs=abs(uwind), vwind_abs=abs(vwind)) %&gt;% 
-  summarise(mean(uwind_abs), sd(uwind_abs), mean(vwind_abs), sd(vwind_abs))</code></pre>
-<pre><code>## # A tibble: 2 × 5
-##   season `mean(uwind_abs)` `sd(uwind_abs)` `mean(vwind_abs)` `sd(vwind_abs)`
-##   &lt;chr&gt;              &lt;dbl&gt;           &lt;dbl&gt;             &lt;dbl&gt;           &lt;dbl&gt;
-## 1 fall                2.18            1.76              2.36            1.52
-## 2 spring              2.46            2.13              2.65            1.59</code></pre>
-<pre class="r"><code>birds &lt;- birds %&gt;% 
-  mutate(uwind_abs=abs(uwind), vwind_abs=abs(vwind)) %&gt;%
-  mutate(uwind_level= case_when(
-    season==&quot;spring&quot; &amp; uwind_abs&lt;= 2.457172-2.132746 ~&quot;low&quot;,
-    season==&quot;fall&quot; &amp; uwind_abs&lt;= 2.184764-1.760663 ~&quot;low&quot;,
-    season==&quot;spring&quot; &amp; uwind_abs&gt;= 2.457172+2.132746 ~&quot;high&quot;,
-    season==&quot;fall&quot; &amp; uwind_abs&gt;= 2.184764+1.760663 ~&quot;high&quot;,
-    season==&quot;spring&quot; &amp; uwind_abs&gt;= 2.457172-2.132746 &amp; uwind&lt;= 2.457172+2.132746 ~&quot;medium&quot;,
-    season==&quot;fall&quot; &amp; uwind_abs&gt;= 2.184764-1.760663 &amp; uwind_abs&lt;= 2.184764+1.760663 ~&quot;medium&quot;,
-  )) %&gt;% 
-  mutate(vwind_level= case_when(
-    season==&quot;spring&quot; &amp; vwind_abs&lt;= 2.648716-1.587146 ~&quot;low&quot;,
-    season==&quot;fall&quot; &amp; vwind_abs&lt;= 2.357720-1.516771 ~&quot;low&quot;,
-    season==&quot;spring&quot; &amp; vwind_abs&gt;= 2.648716+1.587146 ~&quot;high&quot;,
-    season==&quot;fall&quot; &amp; vwind_abs&gt;= 2.357720+1.516771 ~&quot;high&quot;,
-    season==&quot;spring&quot; &amp; vwind_abs&gt;= 2.648716-1.587146 &amp; vwind&lt;= 2.648716+1.587146 ~&quot;medium&quot;,
-    season==&quot;fall&quot; &amp; vwind_abs&gt;= 2.357720-1.516771 &amp; vwind_abs&lt;= 2.357720+1.516771 ~&quot;medium&quot;,
-  ))</code></pre>
-<pre class="r"><code>names(birds)</code></pre>
+<p><code>{ r message=FALSE, warning=FALSE} install.packages(&quot;rsconnect&quot;) library(rsconnect) rsconnect::deployApp()</code></p>
 <pre><code>##  [1] &quot;month&quot;                 &quot;year&quot;                  &quot;yday&quot;                 
 ##  [4] &quot;building&quot;              &quot;volunteer&quot;             &quot;count&quot;                
 ##  [7] &quot;uwind&quot;                 &quot;vwind&quot;                 &quot;ceiling_height&quot;       
 ## [10] &quot;visibility_distance&quot;   &quot;visibility&quot;            &quot;temperature&quot;          
 ## [13] &quot;amt&quot;                   &quot;scaled_yday&quot;           &quot;scaled_uwind&quot;         
 ## [16] &quot;scaled_vwind&quot;          &quot;scaled_ceiling_height&quot; &quot;scaled_temperature&quot;   
-## [19] &quot;scaled_amt&quot;            &quot;season&quot;                &quot;migration_level&quot;      
-## [22] &quot;uwind_abs&quot;             &quot;vwind_abs&quot;             &quot;uwind_level&quot;          
-## [25] &quot;vwind_level&quot;</code></pre>
-<p>##code for a plot</p>
-<pre class="r"><code>#birds %&gt;% 
-#  ggplot()+
-#theme_tufte()+
-#  scale_fill_manual(values=my_palette)+
-#  scale_color_manual(values=my_palette)
-#  scale_fill_manual(values=my_palette[3:10])+ #this line is best for scatterplots, as it removes the lightest two colors from the palette which are too light to see in a scatterplot
-#  scale_color_manual(values=my_palette[3:10])</code></pre>
+## [19] &quot;scaled_amt&quot;            &quot;season&quot;                &quot;migration_level&quot;</code></pre>
+<pre><code>## &lt;colors&gt;
+## #E8EAF6FF #C5CAE9FF #9FA8DAFF #7986CBFF #5C6BC0FF #3F51B5FF #3949ABFF #303F9FFF #283593FF #1A237EFF</code></pre>
+<div id="actual-shiny-app-for-project" class="section level2">
+<h2>Actual Shiny App for Project</h2>
+<pre class="r"><code>ui &lt;- dashboardPage(
+  
+  dashboardHeader(title=&quot;Collision Predictor&quot;),
+  
+  dashboardSidebar(disable=T),
+  
+  dashboardBody(
+    fluidRow(
+      box(
+  selectInput(&quot;building&quot;, &quot;Building Type&quot;,
+                    choices = unique(birds$building),
+                    selected = unique(birds$building)[1]),
+        selectInput(&quot;visibility&quot;, &quot;Visibility&quot;,
+                    choices = unique(birds$visibility),
+                    selected = unique(birds$visibility)[1]),
+        selectInput(&quot;migration_level&quot;, &quot;Migration Level&quot;,
+                    choices = unique(birds$migration_level),
+                    selected = unique(birds$migration_level)[1])
+      ),
+      box(
+        plotOutput(&quot;plot&quot;, width=&quot;500px&quot;, height=&quot;400px&quot;)
+  
+   )
+    )
+)
+
+)
+
+server &lt;- function(input, output, session) {
+  
+  
+  filtered &lt;- reactive({
+    birds %&gt;%
+      filter(building == input$building,
+             visibility == input$visibility,
+             migration_level == input$migration_level)
+  })
+  
+  
+  output$plot &lt;- renderPlot({
+    filtered() %&gt;% 
+      ggplot(aes(x = count)) +
+      geom_density(fill = &quot;#5C6BC0FF&quot;, alpha = 0.5) +
+      scale_fill_viridis_d() +
+      scale_x_continuous(limits = c(0, 5)) +
+      theme_tufte() +
+      theme(plot.title = element_text(size = 20),
+            axis.title.x = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            axis.line.x = element_line(color = &quot;black&quot;, linewidth = 0.3),
+            axis.line.y = element_line(color = &quot;black&quot;, linewidth = 0.3),
+            axis.text.x = element_text(angle=45,hjust=1),
+            legend.position = &quot;right&quot;)+
+      labs(x = &quot;Collision Count&quot;, 
+           y = &quot;Density&quot;, 
+           title = paste(&quot;Collision Distribution -&quot;, as.character(input$building), &quot;|&quot;, as.character(input$visibility), &quot;|&quot;,
+as.character(input$migration_level)))
+  })
+  
+  
+}
+
+shinyApp(ui, server)</code></pre>
+<pre class="r"><code>ui &lt;- dashboardPage(
+  dashboardHeader(title = &quot;Collision Range Predictor&quot;,
+                  titleWidth = 300),
+  dashboardSidebar(disable = T),
+  dashboardBody(
+    fluidRow(
+      box(
+        width = 4,
+        selectInput(&quot;month&quot;, &quot;Month&quot;, choices = unique(birds$month)),
+        selectInput(&quot;building&quot;, &quot;Building Type&quot;, choices = unique(birds$building)),
+        selectInput(&quot;visibility&quot;, &quot;Visibility&quot;, choices = unique(birds$visibility))
+        #selectInput(&quot;x&quot;, &quot;X Variable&quot;,
+          #choices = c(&quot;Month&quot; = &quot;month&quot;,
+                      #&quot;Building&quot; = &quot;building&quot;, &quot;Visibility&quot; = &quot;visibility&quot;)),
+        #selectInput(&quot;y&quot;, &quot;Y Variable&quot;,
+          #choices = c(&quot;Collision Count&quot; = &quot;count&quot;, &quot;Temperature&quot; = &quot;temperature&quot;,
+                      #&quot;Visibility Distance&quot; = &quot;visibility_distance&quot;,
+                      #&quot;Ceiling Height&quot; = &quot;ceiling_height&quot;))
+      ),
+      box(
+        width = 6,
+        plotOutput(&quot;boxplot&quot;, height = &quot;500px&quot;)
+        )
+      )
+    )
+  )
+
+server &lt;- function(input, output, session) {
+  
+  filtered &lt;- reactive({
+    birds %&gt;%
+      filter(
+        month == input$month,
+        #season == input$season,
+        building == input$building,
+        visibility == input$visibility
+      )
+  })
+  
+  output$boxplot &lt;- renderPlot({
+    filtered() %&gt;%
+      ggplot(aes(y = count)) +  #y = .data[[input$y]]
+      geom_boxplot(fill = &quot;#5C6BC0FF&quot;, alpha = 0.8) +
+      theme_tufte() +
+      theme(
+        plot.title = element_text(size = 20, hjust = 0.5),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.line.x = element_line(color = &quot;black&quot;, linewidth = 0.5),
+        axis.line.y = element_line(color = &quot;black&quot;, linewidth = 0.5)
+      ) +
+      labs(y=&quot;Count&quot;,title = &quot;Collision Data Range&quot;)
+  })
+}
+
+shinyApp(ui, server)</code></pre>
+<p>##colors (for theme, use theme_tufte())</p>
+</div>
 
 
 
